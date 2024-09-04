@@ -1,0 +1,21 @@
+apiVersion: "kafka.jikkou.io/v1beta2"
+kind: "KafkaTopic"
+metadata:
+  name: 'jikkou-demo-my-first-topic'
+spec:
+  partitions: 1
+  replicas: 3
+  configs:
+    cleanup.policy: 'compact'
+---
+apiVersion: "kafka.jikkou.io/v1beta2"
+kind: "KafkaTopic"
+metadata:
+  name: 'jikkou-demo-my-second-topic'
+  annotations:
+    jikkou.io/delete: true
+spec:
+  partitions: 5
+  replicas: 3
+  configs:
+    cleanup.policy: 'delete'

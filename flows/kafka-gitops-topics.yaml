@@ -1,0 +1,105 @@
+id: kafka-gitops-topics
+namespace: io.jikkou.kafka
+inputs:
+  - id: gitUrl
+    type: STRING
+    defaults: "https://github.com/fhussonnois/kestra-kafka-gitops"
+
+tasks:
+  # Synchronize all config/resource files from a Git repository
+  - id: sync_github_repository
+    type: io.kestra.plugin.git.SyncNamespaceFiles
+    gitDirectory: .
+    delete: true
+    url: "{{ inputs.gitUrl }}"
+
+  # Validate all kafka topics
+  - id: validate_kafka_topics
+    type: io.kestra.plugin.scripts.shell.Script
+    containerImage: streamthoughts/jikkou:main
+    env:
+      CLUSTER_API_KEY: "{{ envs.cluster_api_key }}"
+      CLUSTER_API_SECRET: "{{ envs.cluster_api_secret }}"
+      CLUSTER_BOOTSTRAP_SERVERS: "{{ envs.cluster_bootstrap_servers }}"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      user: root
+    namespaceFiles:
+      enabled: true
+      include:
+        - "**/*"
+    outputFiles:
+      - "outputs/**"
+    beforeCommands:
+      - export JIKKOUCONFIG=.jikkou/config.json
+      - mkdir outputs/
+    script: |
+      jikkou validate --files ./resources/topics/**.yaml > outputs/validate.yaml 2> error.log
+
+  # Synchronize all kafka topics
+  - id: sync_kafka_topics
+    type: io.kestra.plugin.scripts.shell.Script
+    containerImage: streamthoughts/jikkou:main
+    env:
+      CLUSTER_API_KEY: "{{ envs.cluster_api_key }}"
+      CLUSTER_API_SECRET: "{{ envs.cluster_api_secret }}"
+      CLUSTER_BOOTSTRAP_SERVERS: "{{ envs.cluster_bootstrap_servers }}"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      user: root
+    namespaceFiles:
+      enabled: true
+      include:
+        - "**/*"
+    outputFiles:
+      - "outputs/**"
+    beforeCommands:
+      - export JIKKOUCONFIG=.jikkou/config.json
+      - mkdir outputs/
+    script: |
+      echo "Create backup for Kafka topics"
+      jikkou get kafkatopics > outputs/kafka-topics.backup.yaml
+      echo "Compute and apply changes Kafka topics"
+      jikkou diff --files ./resources/topics/**.yaml > outputs/topics.diff
+      jikkou patch --files outputs/topics.diff --mode FULL -o JSON > outputs/results.json
+
+  # Upload backup and report changes
+  - id: process_changes
+    type: io.kestra.plugin.core.flow.Parallel
+    tasks:
+      - id: upload_backup_to_s3
+        type: "io.kestra.plugin.aws.s3.Upload"
+        from: "{{ outputs.sync_kafka_topics.outputFiles['outputs/kafka-topics.backup.yaml'] }}"
+        accessKeyId: "{{ envs.aws_s3_access_key }}"
+        secretKeyId: "{{ envs.aws_s3_secret_key }}"
+        bucket: "{{ envs.aws_s3_bucket }}"
+        region: "eu-west-3"
+        key: "kafka/topics/backups/{{ execution.startDate }}/kafka-topics.jikkou.yaml"
+
+      - id: report_changes_to_kafka
+        type: io.kestra.plugin.core.flow.Sequential
+        tasks:
+          # Convert changes to record
+          - id: convert_to_ion
+            type: io.kestra.plugin.serdes.json.JsonToIon
+            from: "{{ outputs.sync_kafka_topics.outputFiles['outputs/results.json'] }}"
+
+          - id: convert_to_record
+            type: io.kestra.plugin.scripts.groovy.FileTransform
+            from: "{{ outputs.convert_to_ion.uri }}"
+            script: |
+              rows = row['results'].collect(r -> ['key': r['change']['metadata']['name'], 'value': r])
+          # Push changes
+          - id: push_changes_to_kafka
+            type: io.kestra.plugin.kafka.Produce
+            from: "{{ outputs.convert_to_record.uri }}"
+            keySerializer: STRING
+            valueSerializer: JSON
+            properties:
+              bootstrap.servers: "{{ envs.cluster_bootstrap_servers }}"
+              security.protocol: SASL_SSL
+              sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username='{{ envs.cluster_api_key }}' password='{{ envs.cluster_api_secret }}';"
+              sasl.mechanism: PLAIN
+              client.dns.lookup: use_all_dns_ips
+              session.timeout.ms: 45000
+            topic: kafka-topic-change-events

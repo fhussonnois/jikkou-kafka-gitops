@@ -1,0 +1,11 @@
+{
+  "currentContext" : "confluent",
+  "confluent" : {
+    "configFile" : "application.conf",
+    "configProps" : { }
+  },
+  "localhost" : {
+    "configFile" : "localhost.conf",
+    "configProps" : { }
+  }
+}

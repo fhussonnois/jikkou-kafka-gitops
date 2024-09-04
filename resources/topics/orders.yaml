@@ -1,0 +1,11 @@
+---
+apiVersion: 'kafka.jikkou.io/v1beta2'
+kind: 'KafkaTopic'
+metadata:
+  name: 'orders'
+spec:
+  partitions: 12
+  replicas: 3
+  configs:
+    cleanup.policy: 'delete'
+
