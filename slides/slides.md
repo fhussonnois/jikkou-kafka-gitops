@@ -295,9 +295,10 @@ class: "text-left"
 * Open Source - **Apache License, Version 2.0**.
 * Written in Java.
 * Declarative (YAML) - Resource as Code.
-* Easy to versioning, Tracking changes over time.
-* GitOps - Continuously Reconciliation
-* Extensible - Developed for **Apache Kafka®**, but designed for anything!
+* Can be easily integrated into a GitOps workflow 
+  * [Jikkou GitHub Action](https://github.com/streamthoughts/setup-jikkou)
+* Extensible - Developed for **Apache Kafka®**, 
+  * but designed for anything!
 
 ::right::
 
@@ -313,36 +314,6 @@ class: "text-left"
   margin-bottom: 1rem;
 }
 </style>
-
----
-layout: image-right
-image: /assets/img-gen-107.jpeg
----
-
-# Everything As A Resource
-
-Express the desired state of resources using YAML descriptor files.
-
-```yaml {monaco}
----
-# ./my-topic.yaml 
-apiVersion: "kafka.jikkou.io/v1beta2"
-kind: KafkaTopic
-metadata:
-  name: 'my-topic'
-spec:
-  partitions: 3
-  replicas: 1
-  configs:
-    min.insync.replicas: 1
-    cleanup.policy: 'delete'
-```
-
-<div class="text-small text-light">
-
-* Same resource model as Kubernetes to describe the entities to manage.
-
-</div>
 
 ---
 layout: center
@@ -362,36 +333,6 @@ $ sdk install jikkou
 ```
 
 Available as a **native image** (built with GraalVM) or **Java Binary distribution**.
-
----
-layout: default
-class: "text-left"
----
-
-# Jikkou CLI
-
-```bash
-CORE COMMANDS:
-  apply                     Update the resources as described by the resource definition files.
-  create                    Create resources from the resource definition files (only non-existing resources will be created).
-  delete                    Delete resources that are no longer described by the resource definition files.
-  diff                      Show resource changes required by the current resource definitions.
-  get                       Display one or many specific resources.
-  prepare                   Prepare the resource definition files for validation.
-  update                    Create or update resources from the resource definition files
-  validate                  Check whether the resources definitions meet all validation requirements.
-
-SYSTEM MANAGEMENT COMMANDS:
-  action                    List/execute actions.
-  health                    Print or describe health indicators.
-
-ADDITIONAL COMMANDS:
-  api-extensions            Print the supported API extensions
-  api-resources             Print the supported API resources
-  config                    Sets or retrieves the configuration of this client
-  generate-completion       Generate bash/zsh completion script for jikkou.
-  help                      Display help information about the specified command
-``` 
 
 ---
 layout: two-cols-header
@@ -447,9 +388,40 @@ $ jikkou config view
 ```
 
 ---
+layout: image-right
+image: /assets/img-gen-107.jpeg
+---
+
+# Everything As A Resource
+
+Express the desired state of resources using YAML descriptor files.
+
+```yaml {monaco}
+---
+# ./my-topic.yaml 
+apiVersion: "kafka.jikkou.io/v1beta2"
+kind: KafkaTopic
+metadata:
+  name: 'my-topic'
+spec:
+  partitions: 3
+  replicas: 1
+  configs:
+    min.insync.replicas: 1
+    cleanup.policy: 'delete'
+```
+
+<div class="text-small text-light">
+
+* Same resource model as Kubernetes to describe the entities to manage.
+
+</div>
+
+---
 layout: two-cols-header
 class: text-left
 ---
+
 
 # Reconcile
 
@@ -643,7 +615,8 @@ jikkou {
       }
     }
 }
-```    
+```  
+ 
 ---
 layout: default
 class: "text-left"
@@ -746,7 +719,6 @@ Key Benefits
 
 * **Can be extended** : 
   * <span class="text-small text-light">Supports custom resources and extensions.</span>
-
 
 ---
 layout: default

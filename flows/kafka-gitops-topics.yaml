@@ -10,7 +10,7 @@ tasks:
   - id: sync_github_repository
     type: io.kestra.plugin.git.SyncNamespaceFiles
     gitDirectory: .
-    delete: true
+    delete: false
     url: "{{ inputs.gitUrl }}"
 
   # Validate all kafka topics
@@ -33,8 +33,12 @@ tasks:
     beforeCommands:
       - export JIKKOUCONFIG=.jikkou/config.json
       - mkdir outputs/
+    failFast: false
     script: |
-      jikkou validate --files ./resources/topics/**.yaml > outputs/validate.yaml 2> outputs/error.log
+      jikkou validate --files ./resources/topics/**.yaml > outputs/out.log;
+      exit_code=$?;
+      if [ $exit_code -ne 0 ]; then cat ./outputs/out.log; fi;
+      exit $exit_code
 
   # Synchronize all kafka topics
   - id: sync_kafka_topics

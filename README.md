@@ -24,6 +24,7 @@ sdk install jikkou
 ```
 
 ````bash
+export JIKKOUCONFIG=.jikkou/config.json
 source <(jikkou generate-completion)
 jikkou --version
 ````
@@ -49,6 +50,8 @@ KESTRA_CLUSTER_BOOTSTRAP_SERVER=${CLUSTER_BOOTSTRAP_SERVER}
 ```
 
 and
+
+ 
 
 ```bash
 export $(xargs < .env) 
