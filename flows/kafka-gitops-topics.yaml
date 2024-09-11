@@ -34,7 +34,7 @@ tasks:
       - export JIKKOUCONFIG=.jikkou/config.json
       - mkdir outputs/
     script: |
-      jikkou validate --files ./resources/topics/**.yaml > outputs/validate.yaml 2> error.log
+      jikkou validate --files ./resources/topics/**.yaml > outputs/validate.yaml 2> outputs/error.log
 
   # Synchronize all kafka topics
   - id: sync_kafka_topics
@@ -67,6 +67,7 @@ tasks:
   - id: process_changes
     type: io.kestra.plugin.core.flow.Parallel
     tasks:
+      # S3 Backup
       - id: upload_backup_to_s3
         type: "io.kestra.plugin.aws.s3.Upload"
         from: "{{ outputs.sync_kafka_topics.outputFiles['outputs/kafka-topics.backup.yaml'] }}"
@@ -76,23 +77,21 @@ tasks:
         region: "eu-west-3"
         key: "kafka/topics/backups/{{ execution.startDate }}/kafka-topics.jikkou.yaml"
 
+      # Kafka Report
       - id: report_changes_to_kafka
         type: io.kestra.plugin.core.flow.Sequential
         tasks:
-          # Convert changes to record
-          - id: convert_to_ion
-            type: io.kestra.plugin.serdes.json.JsonToIon
+          # Convert changes to Kafka records
+          - id: to_kafka_record
+            type: io.kestra.plugin.transform.jsonata.TransformItems
             from: "{{ outputs.sync_kafka_topics.outputFiles['outputs/results.json'] }}"
+            expression: |
+              results.({'key': change.metadata.name , 'value': $ })
 
-          - id: convert_to_record
-            type: io.kestra.plugin.scripts.groovy.FileTransform
-            from: "{{ outputs.convert_to_ion.uri }}"
-            script: |
-              rows = row['results'].collect(r -> ['key': r['change']['metadata']['name'], 'value': r])
           # Push changes
           - id: push_changes_to_kafka
             type: io.kestra.plugin.kafka.Produce
-            from: "{{ outputs.convert_to_record.uri }}"
+            from: "{{ outputs.to_kafka_record.uri }}"
             keySerializer: STRING
             valueSerializer: JSON
             properties:
@@ -103,3 +102,11 @@ tasks:
               client.dns.lookup: use_all_dns_ips
               session.timeout.ms: 45000
             topic: kafka-topic-change-events
+errors:
+  - id: alert_on_failure
+    type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
+    url: "{{ envs.slack_webhook }}"
+    payload: |
+      {
+        "text": "Failed to synchronize kafka topic: {{ flow.namespace }}.{{ flow.id }} with ID {{ execution.id }}"
+      }

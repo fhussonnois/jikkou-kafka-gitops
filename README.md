@@ -21,9 +21,12 @@ management of the configurations that live on your [Apache Kafka]https://kafka.a
 ```bash
 # using SDKMan!
 sdk install jikkou
+```
+
+````bash
 source <(jikkou generate-completion)
 jikkou --version
-```
+````
 
 ## Create a Confluent Cloud Cluster
 
@@ -159,3 +162,14 @@ jikkou apply \
   --files ./getstarted/topics-template.tpl \
   --values-files ./getstarted/topics-values.yaml
 ```
+
+## Demo #2 - Automate Jikkou with Kestra
+
+
+```bash
+docker compose -f ./docker-compose.yaml up
+```
+
+
+
+**Update the application.conf**
