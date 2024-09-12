@@ -3,7 +3,7 @@ namespace: io.jikkou.kafka
 inputs:
   - id: gitUrl
     type: STRING
-    defaults: "https://github.com/fhussonnois/kestra-kafka-gitops"
+    defaults: "https://github.com/fhussonnois/jikkou-kafka-gitops"
 
 tasks:
   # Synchronize all config/resource files from a Git repository

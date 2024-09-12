@@ -168,11 +168,6 @@ jikkou apply \
 
 ## Demo #2 - Automate Jikkou with Kestra
 
-
 ```bash
 docker compose -f ./docker-compose.yaml up
 ```
-
-
-
-**Update the application.conf**

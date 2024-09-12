@@ -91,8 +91,10 @@ layout: 'intro'
 # Florian Hussonnois
 
 <div class="leading-8 opacity-80">
-Lead Software Engineer <strong>@Kestra</strong>.<br><br>
+
+Lead Software Engineer **[@Kestra](https://kestra.io/)**.<br><br>
 </div>
+
 
 * Worked for 12 years as Consultant & Trainer
 * 10+ years of experience with Apache Kafka (version 0.7)
@@ -232,7 +234,7 @@ layout: two-cols-header
 class: "text-left"
 ---
 
-# The GitOps and IaC Approach
+# The GitOps and IaC
 
 Everything As Code!
 
